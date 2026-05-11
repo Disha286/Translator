@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>English → Kannada Translator</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream:       #FAF7F2;
+      --parchment:   #F2EDE3;
+      --peach:       #F7D9C4;
+      --warm-rose:   #E8A598;
+      --terracotta:  #C9685A;
+      --text-dark:   #3B2E2A;
+      --text-mid:    #7A5E57;
+      --text-light:  #B09A94;
+      --border:      #E5D8CE;
+      --white:       #FFFFFF;
+      --shadow:      rgba(90, 55, 45, 0.07);
+    }
+
+    body {
+      background-color: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px 80px;
+    }
+
+    header { text-align: center; margin-bottom: 48px; }
+
+    .lang-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--peach);
+      color: var(--terracotta);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 999px;
+      margin-bottom: 20px;
+    }
+
+    .lang-badge span.dot {
+      width: 6px; height: 6px;
+      background: var(--terracotta);
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 400;
+      line-height: 1.15;
+      color: var(--text-dark);
+      letter-spacing: -0.5px;
+    }
+
+    h1 em { font-style: italic; color: var(--terracotta); }
+
+    .subtitle {
+      margin-top: 12px;
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--text-mid);
+    }
+
+    .card {
+      width: 100%;
+      max-width: 820px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 36px;
+      box-shadow: 0 4px 28px var(--shadow);
+    }
+
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 620px) {
+      .panels { grid-template-columns: 1fr; }
+    }
+
+    .panel-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      margin-bottom: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 200px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--parchment);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 300;
+      color: var(--text-dark);
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s ease;
+      line-height: 1.6;
+    }
+
+    textarea::placeholder { color: var(--text-light); }
+    textarea:focus { border-color: var(--warm-rose); background: var(--white); }
+
+    .output-box {
+      width: 100%;
+      height: 200px;
+      padding: 16px;
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+      background: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 300;
+      color: var(--text-dark);
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+
+    .output-placeholder { color: var(--text-light); font-style: italic; }
+
+    .kannada-text {
+      font-size: 18px;
+      line-height: 1.8;
+      color: var(--terracotta);
+      font-weight: 400;
+      cursor: pointer;
+    }
+
+    .actions {
+      margin-top: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .char-count { font-size: 13px; color: var(--text-light); font-weight: 300; }
+
+    .btn-group { display: flex; gap: 12px; }
+
+    button {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: 12px 28px;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:active { transform: scale(0.97); }
+
+    .btn-primary { background: var(--terracotta); color: var(--white); }
+    .btn-primary:hover { opacity: 0.88; }
+
+    .btn-secondary {
+      background: var(--parchment);
+      color: var(--text-mid);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: var(--peach); color: var(--terracotta); }
+
+    .spinner {
+      display: none;
+      width: 18px; height: 18px;
+      border: 2px solid var(--peach);
+      border-top-color: var(--terracotta);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 80px auto 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: var(--text-dark);
+      color: var(--white);
+      font-size: 13px;
+      padding: 10px 22px;
+      border-radius: 999px;
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    footer {
+      margin-top: 40px;
+      font-size: 12px;
+      color: var(--text-light);
+      text-align: center;
+      font-weight: 300;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="lang-badge">
+      <span class="dot"></span>
+      English &nbsp;→&nbsp; ಕನ್ನಡ
+    </div>
+    <h1>Translate with<br><em>ease & grace</em></h1>
+    <p class="subtitle">Type in English, instantly read in Kannada.</p>
+  </header>
+
+  <div class="card">
+    <div class="panels">
+
+      <div>
+        <p class="panel-label">English</p>
+        <textarea id="inputText" placeholder="Start typing in English…" maxlength="1000" oninput="updateCount()"></textarea>
+      </div>
+
+      <div>
+        <p class="panel-label">Kannada &nbsp;·&nbsp; ಕನ್ನಡ</p>
+        <div class="output-box" id="outputBox">
+          <div class="spinner" id="spinner"></div>
+          <p class="output-placeholder" id="placeholder">Translation will appear here…</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="actions">
+      <span class="char-count"><span id="charCount">0</span> / 1000 characters</span>
+      <div class="btn-group">
+        <button class="btn-secondary" onclick="clearAll()">Clear</button>
+        <button class="btn-primary" onclick="translateText()">Translate →</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>Powered by Google Translate · Built with Flask + deep-translator</footer>
+
+  <div class="toast" id="toast">Copied to clipboard!</div>
+
+  <script>
+    function updateCount() {
+      document.getElementById("charCount").textContent =
+        document.getElementById("inputText").value.length;
+    }
+
+    function showSpinner(visible) {
+      document.getElementById("spinner").style.display = visible ? "block" : "none";
+      document.getElementById("placeholder").style.display = visible ? "none" : "block";
+    }
+
+    async function translateText() {
+      const text = document.getElementById("inputText").value.trim();
+      const outputBox = document.getElementById("outputBox");
+      const placeholder = document.getElementById("placeholder");
+
+      if (!text) {
+        placeholder.textContent = "Please enter some English text first.";
+        placeholder.className = "output-placeholder";
+        return;
+      }
+
+      showSpinner(true);
+      outputBox.querySelector(".kannada-text")?.remove();
+
+      try {
+        const res = await fetch("/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
+        const data = await res.json();
+        showSpinner(false);
+
+        if (data.error) {
+          placeholder.textContent = "Error: " + data.error;
+          placeholder.className = "output-placeholder";
+        } else {
+          placeholder.style.display = "none";
+          const p = document.createElement("p");
+          p.className = "kannada-text";
+          p.textContent = data.translated;
+          p.title = "Click to copy";
+          p.onclick = () => copyText(data.translated);
+          outputBox.appendChild(p);
+        }
+      } catch (err) {
+        showSpinner(false);
+        placeholder.textContent = "Network error. Is the server running?";
+      }
+    }
+
+    function clearAll() {
+      document.getElementById("inputText").value = "";
+      document.getElementById("charCount").textContent = "0";
+      const outputBox = document.getElementById("outputBox");
+      outputBox.querySelector(".kannada-text")?.remove();
+      const ph = document.getElementById("placeholder");
+      ph.textContent = "Translation will appear here…";
+      ph.className = "output-placeholder";
+      ph.style.display = "block";
+    }
+
+    function copyText(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const toast = document.getElementById("toast");
+        toast.classList.add("show");
+        setTimeout(() => toast.classList.remove("show"), 2000);
+      });
+    }
+
+    document.getElementById("inputText").addEventListener("keydown", e => {
+      if (e.ctrlKey && e.key === "Enter") translateText();
+    });
+  </script>
+</body>
+</html>
