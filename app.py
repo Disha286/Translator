@@ -13,11 +13,12 @@ def index():
 def translate():
     data = request.get_json()
     text = data.get("text", "").strip()
+    source = data.get("source", "en")
     target = data.get("target", "kn")
     if not text:
         return jsonify({"translated": "", "error": "No text provided."})
     try:
-        translated = GoogleTranslator(source="en", target=target).translate(text)
+        translated = GoogleTranslator(source=source, target=target).translate(text)
         return jsonify({"translated": translated})
     except Exception as e:
         return jsonify({"translated": "", "error": str(e)})
