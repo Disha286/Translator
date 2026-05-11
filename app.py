@@ -3,7 +3,7 @@ from deep_translator import GoogleTranslator
 
 app = Flask(__name__)
 
-LANGUAGES = GoogleTranslator.get_supported_languages(as_dict=True)
+LANGUAGES = GoogleTranslator(source="en", target="en").get_supported_languages(as_dict=True)
 
 @app.route("/")
 def index():
