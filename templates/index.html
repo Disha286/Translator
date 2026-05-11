@@ -85,7 +85,6 @@
       box-shadow: 0 4px 28px var(--shadow);
     }
 
-    /* Language selector */
     .lang-select-row {
       display: flex;
       align-items: center;
@@ -184,7 +183,6 @@
       line-height: 1.8;
       color: var(--terracotta);
       font-weight: 400;
-      cursor: pointer;
     }
 
     .actions {
@@ -235,6 +233,110 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* Speaker bar */
+    .speaker-bar {
+      display: none;
+      margin-top: 20px;
+      padding: 16px 20px;
+      background: var(--parchment);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .speaker-bar.visible { display: flex; }
+
+    .speaker-label {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .speaker-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-speak {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--terracotta);
+      color: var(--white);
+      border: none;
+      border-radius: 999px;
+      padding: 10px 22px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-speak:hover { opacity: 0.88; }
+    .btn-speak:active { transform: scale(0.97); }
+
+    .btn-speak svg {
+      width: 16px; height: 16px;
+      fill: white;
+      flex-shrink: 0;
+    }
+
+    .btn-stop {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: var(--parchment);
+      color: var(--terracotta);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 10px 22px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-stop.visible { display: flex; }
+    .btn-stop:hover { background: var(--peach); }
+    .btn-stop:active { transform: scale(0.97); }
+
+    .btn-stop svg {
+      width: 14px; height: 14px;
+      fill: var(--terracotta);
+    }
+
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-mid);
+    }
+
+    .speed-control input[type="range"] {
+      width: 80px;
+      accent-color: var(--terracotta);
+      cursor: pointer;
+    }
+
+    /* speaking pulse animation on the speak button */
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 rgba(201,104,90,0.4); }
+      70%  { box-shadow: 0 0 0 8px rgba(201,104,90,0); }
+      100% { box-shadow: 0 0 0 0 rgba(201,104,90,0); }
+    }
+
+    .btn-speak.speaking { animation: pulse-ring 1.2s ease infinite; }
+
     .toast {
       position: fixed;
       bottom: 32px;
@@ -269,12 +371,11 @@
       English &nbsp;→&nbsp; Any Language
     </div>
     <h1>Translate with<br><em>ease & grace</em></h1>
-    <p class="subtitle">Type in English, read it in any language.</p>
+    <p class="subtitle">Type in English, read and hear it in any language.</p>
   </header>
 
   <div class="card">
 
-    <!-- Language Selector -->
     <div class="lang-select-row">
       <label>Translate to</label>
       <select id="targetLang">
@@ -303,6 +404,30 @@
 
     </div>
 
+    <!-- Speaker Bar -->
+    <div class="speaker-bar" id="speakerBar">
+      <span class="speaker-label">🔊 Listen to translation</span>
+      <div class="speed-control">
+        <span>Speed</span>
+        <input type="range" id="speedSlider" min="0.5" max="2" step="0.1" value="1" />
+        <span id="speedVal">1.0x</span>
+      </div>
+      <div class="speaker-controls">
+        <button class="btn-speak" id="btnSpeak" onclick="speakText()">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+          </svg>
+          Speak
+        </button>
+        <button class="btn-stop" id="btnStop" onclick="stopSpeech()">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 6h12v12H6z"/>
+          </svg>
+          Stop
+        </button>
+      </div>
+    </div>
+
     <div class="actions">
       <span class="char-count"><span id="charCount">0</span> / 1000 characters</span>
       <div class="btn-group">
@@ -313,10 +438,14 @@
 
   </div>
 
-  <footer>Powered by Google Translate · Built with Flask + deep-translator</footer>
+  <footer>Powered by Google Translate · Web Speech API · Built with Flask</footer>
   <div class="toast" id="toast">Copied to clipboard!</div>
 
   <script>
+    let currentTranslation = "";
+    let currentLangCode = "kn";
+    let utterance = null;
+
     function updateCount() {
       document.getElementById("charCount").textContent =
         document.getElementById("inputText").value.length;
@@ -330,6 +459,11 @@
     document.getElementById("targetLang").addEventListener("change", function () {
       const name = this.options[this.selectedIndex].text;
       document.getElementById("outputLabel").textContent = name;
+      currentLangCode = this.value;
+    });
+
+    document.getElementById("speedSlider").addEventListener("input", function () {
+      document.getElementById("speedVal").textContent = parseFloat(this.value).toFixed(1) + "x";
     });
 
     async function translateText() {
@@ -344,8 +478,10 @@
         return;
       }
 
+      stopSpeech();
       showSpinner(true);
       outputBox.querySelector(".translated-text")?.remove();
+      document.getElementById("speakerBar").classList.remove("visible");
 
       try {
         const res = await fetch("/translate", {
@@ -361,12 +497,19 @@
           placeholder.style.display = "block";
         } else {
           placeholder.style.display = "none";
+          currentTranslation = data.translated;
+          currentLangCode = target;
+
           const p = document.createElement("p");
           p.className = "translated-text";
           p.textContent = data.translated;
           p.title = "Click to copy";
           p.onclick = () => copyText(data.translated);
           outputBox.appendChild(p);
+
+          // Show speaker bar and auto-speak
+          document.getElementById("speakerBar").classList.add("visible");
+          speakText();
         }
       } catch (err) {
         showSpinner(false);
@@ -374,7 +517,41 @@
       }
     }
 
+    function speakText() {
+      if (!currentTranslation) return;
+      stopSpeech();
+
+      utterance = new SpeechSynthesisUtterance(currentTranslation);
+      utterance.lang = currentLangCode;
+      utterance.rate = parseFloat(document.getElementById("speedSlider").value);
+
+      const btnSpeak = document.getElementById("btnSpeak");
+      const btnStop = document.getElementById("btnStop");
+
+      btnSpeak.classList.add("speaking");
+      btnStop.classList.add("visible");
+
+      utterance.onend = () => {
+        btnSpeak.classList.remove("speaking");
+        btnStop.classList.remove("visible");
+      };
+
+      utterance.onerror = () => {
+        btnSpeak.classList.remove("speaking");
+        btnStop.classList.remove("visible");
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function stopSpeech() {
+      window.speechSynthesis.cancel();
+      document.getElementById("btnSpeak")?.classList.remove("speaking");
+      document.getElementById("btnStop")?.classList.remove("visible");
+    }
+
     function clearAll() {
+      stopSpeech();
       document.getElementById("inputText").value = "";
       document.getElementById("charCount").textContent = "0";
       const outputBox = document.getElementById("outputBox");
@@ -383,6 +560,8 @@
       ph.textContent = "Translation will appear here…";
       ph.className = "output-placeholder";
       ph.style.display = "block";
+      document.getElementById("speakerBar").classList.remove("visible");
+      currentTranslation = "";
     }
 
     function copyText(text) {
