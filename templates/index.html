@@ -639,9 +639,20 @@
       });
     }
 
-    document.getElementById("inputText").addEventListener("keydown", e => {
-      if (e.ctrlKey && e.key === "Enter") translateText();
-    });
+    let debounceTimer = null;
+
+document.getElementById("inputText").addEventListener("input", () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    if (document.getElementById("inputText").value.trim()) {
+      translateText();
+    }
+  }, 800);
+});
+
+document.getElementById("inputText").addEventListener("keydown", e => {
+  if (e.ctrlKey && e.key === "Enter") translateText();
+});
   </script>
 </body>
 </html>
